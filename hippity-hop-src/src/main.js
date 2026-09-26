@@ -214,7 +214,7 @@ function resize() {
   composer.setPixelRatio(dpr);
   composer.setSize(w, h);
   camera.aspect = w / Math.max(1, h);
-  camera.fov = portrait() ? 68 : 46;
+  camera.fov = portrait() ? 66 : 46;
   camera.updateProjectionMatrix();
   renderer.shadowMap.enabled = quality > 0;
   world.setShadowQuality(quality);
@@ -227,15 +227,15 @@ function dropQuality() {
   resize();
 }
 
-let camX = 0.42;
-let camY = 2.15;
-let camZ = 4.35;
+let camX = 0.55;
+let camY = 2.95;
+let camZ = 4.5;
 
 function updateCamera(dt) {
   const p = portrait();
-  const tx = p ? 0.42 : 3.1;
-  const ty = (p ? 2.15 : 1.9) + Math.min(0.22, G.rabbitY * 0.1);
-  const tz = p ? 4.35 : 3.6;
+  const tx = p ? 0.55 : 3.1;
+  const ty = (p ? 2.95 : 2.05) + Math.min(0.18, G.rabbitY * 0.08);
+  const tz = p ? 4.5 : 3.8;
   const k = 1 - Math.exp(-dt * 4);
   camX += (tx - camX) * k;
   camY += (ty - camY) * k;
@@ -244,7 +244,7 @@ function updateCamera(dt) {
   const sx = (Math.random() - 0.5) * G.shake * 0.22;
   const sy = (Math.random() - 0.5) * G.shake * 0.16;
   camera.position.set(camX + sx, camY + sy, camZ);
-  camera.lookAt(0, 0.72 + G.rabbitY * 0.05, p ? -6.5 : -3);
+  camera.lookAt(0, 0.78 + G.rabbitY * 0.04, p ? -6.2 : -3.2);
 }
 
 function doHop() {
