@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#07060f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Hippity Hop — Zig the rabbit, one touch, a whole night city." />
+  <title>Hippity Hop</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --gold: #ffd56a;
+      --pink: #ff2d6f;
+      --teal: #3ee0c5;
+      --ink: #140c12;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    [hidden] { display: none !important; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #07060f;
+      touch-action: none;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      font-family: Impact, "Arial Black", "Haettenschweiler", sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+    #flash {
+      position: fixed; inset: 0; pointer-events: none; opacity: 0; background: #ff4d6a;
+    }
+    #flash.hit { animation: flash 0.38s ease-out; }
+    @keyframes flash { 0% { opacity: 0.62; } 100% { opacity: 0; } }
+    #hud {
+      position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    }
+    body[data-mode="title"] #scorewrap { visibility: hidden; }
+    #top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: calc(10px + env(safe-area-inset-top)) 14px 0 16px;
+    }
+    #scorewrap { text-align: left; }
+    #score {
+      display: block; font-size: 54px; line-height: 0.85; color: #fff8ee;
+      text-shadow: 0 3px 0 #1a0a12, 0 0 18px rgba(255, 45, 111, 0.45);
+    }
+    #score.pop { animation: bump 0.18s ease-out; }
+    @keyframes bump { 50% { transform: scale(1.12); } }
+    #bestline {
+      display: block; margin-top: 4px; font-family: "Trebuchet MS", sans-serif;
+      font-weight: 700; letter-spacing: 0.14em; font-size: 11px; color: var(--gold);
+    }
+    #mute {
+      pointer-events: auto; width: 48px; height: 48px; border-radius: 50%;
+      border: 2px solid rgba(255, 213, 106, 0.7); background: rgba(10, 8, 16, 0.55);
+      color: var(--gold); display: grid; place-items: center; padding: 0;
+    }
+    #mute svg { width: 22px; height: 22px; display: block; }
+    #mute .off { display: none; }
+    #mute.is-muted .on { display: none; }
+    #mute.is-muted .off { display: block; }
+    #callout {
+      position: absolute; left: 50%; top: 18%;
+      transform: translate(-50%, -20px); opacity: 0;
+      font-size: clamp(28px, 9vw, 52px); letter-spacing: 0.03em; color: var(--gold);
+      text-shadow: 0 4px 0 #1a0a12, 0 0 16px rgba(255, 45, 111, 0.4);
+      white-space: nowrap; max-width: 96vw; text-align: center;
+    }
+    #callout.show { animation: shout 1.15s ease forwards; }
+    @keyframes shout {
+      0% { opacity: 0; transform: translate(-50%, 8px) scale(0.7); }
+      16% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
+      70% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -18px) scale(1); }
+    }
+    #floater {
+      position: absolute; left: 22%; top: 16%; opacity: 0;
+      color: #fff; font-size: 28px; text-shadow: 0 2px 0 #1a0a12;
+    }
+    #floater.go { animation: floatup 0.6s ease-out; }
+    @keyframes floatup {
+      0% { opacity: 0; transform: translateY(8px); }
+      20% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-28px); }
+    }
+    #burrow {
+      pointer-events: auto; position: fixed; z-index: 3;
+      right: 14px; bottom: calc(14px + env(safe-area-inset-bottom));
+      width: 104px; height: 104px; border-radius: 50%;
+      border: 3px solid var(--teal); background: rgba(6, 18, 20, 0.45);
+      color: #e9fff8; letter-spacing: 0.08em; font-size: 16px;
+      font-family: inherit; overflow: hidden;
+      display: grid; place-items: center;
+    }
+    #burrow b { position: relative; z-index: 1; font-weight: 400; }
+    #burrow-fill {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 100%;
+      background: rgba(62, 224, 197, 0.38); pointer-events: none;
+    }
+    #burrow.cool { border-color: #355e56; color: #8aa; }
+    #burrow.deny { animation: deny 0.25s ease; }
+    @keyframes deny { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+    #title, #over {
+      position: fixed; inset: 0; z-index: 4; display: flex; flex-direction: column;
+      justify-content: space-between;
+      padding: calc(18px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom));
+      background:
+        linear-gradient(to bottom, rgba(5, 4, 12, 0.78), rgba(5, 4, 12, 0.05) 30%, rgba(5, 4, 12, 0) 46%),
+        linear-gradient(to top, rgba(5, 4, 12, 0.9), rgba(5, 4, 12, 0.2) 36%, rgba(5, 4, 12, 0) 58%);
+    }
+    #title.hidden, #over[hidden] { display: none; }
+    .logo {
+      margin: 8px 0 0; font-size: clamp(64px, 18vw, 104px); line-height: 0.82;
+      letter-spacing: 0.01em; color: #fff6ea;
+      text-shadow: 0 6px 0 #1a0a14, 0 0 22px rgba(255, 45, 111, 0.5);
+    }
+    .logo span { display: block; color: var(--gold); text-shadow: 0 6px 0 #3a2208, 0 0 18px rgba(255, 213, 106, 0.35); }
+    .tag, .title-best, .keys, .hints, .final-cleared, .final-best {
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif; font-weight: 700;
+    }
+    .tag { margin: 10px 0 0; color: #f0e6da; font-size: 16px; letter-spacing: 0.01em; max-width: 18em; }
+    .title-best { margin-top: 8px; color: var(--gold); letter-spacing: 0.16em; font-size: 13px; }
+    .cta {
+      font-size: clamp(28px, 8vw, 40px); color: #fff; letter-spacing: 0.08em;
+      text-shadow: 0 3px 0 #1a0a12; animation: pulse 1.1s ease-in-out infinite;
+    }
+    @keyframes pulse { 50% { transform: scale(1.04); color: var(--gold); } }
+    .hints { display: flex; gap: 10px; margin-top: 12px; }
+    .hints div {
+      flex: 1; background: rgba(8, 6, 14, 0.72); border: 1px solid rgba(255, 213, 106, 0.28);
+      border-radius: 14px; padding: 10px 10px 8px; color: #fff6ea; letter-spacing: 0.08em; font-size: 13px;
+    }
+    .hints b { display: block; font-family: Impact, "Arial Black", sans-serif; font-size: 22px; font-weight: 400; color: var(--gold); }
+    .hints div:last-child b { color: var(--teal); }
+    .keys { margin-top: 8px; color: rgba(255,255,255,0.62); font-size: 12px; letter-spacing: 0.04em; }
+    @media (pointer: coarse) { .keys { display: none; } }
+    .card {
+      margin-top: auto; background: rgba(10, 7, 16, 0.92);
+      border: 1px solid rgba(255, 213, 106, 0.38); border-radius: 22px;
+      padding: 18px 16px 16px; text-align: center;
+    }
+    .wrap-title { font-size: clamp(42px, 12vw, 64px); margin: 0; color: #fff6ea; letter-spacing: 0.04em;
+      text-shadow: 0 4px 0 #1a0a14; }
+    #final-score { font-size: 84px; line-height: 0.85; color: var(--gold); text-shadow: 0 4px 0 #3a2208; }
+    .final-best, .final-cleared { color: #f3eadf; letter-spacing: 0.12em; font-size: 13px; margin-top: 4px; }
+    #new-best { margin: 8px 0 0; color: var(--pink); letter-spacing: 0.14em; font-size: 18px; }
+    #retry {
+      width: 100%; height: 64px; margin-top: 14px; border: 0; border-radius: 16px;
+      background: linear-gradient(180deg, #ffe08a, #ff9f1c);
+      color: #1a0e08; font-family: inherit; font-size: 28px; letter-spacing: 0.06em;
+      box-shadow: 0 7px 0 #8a4b00;
+    }
+    #retry:active { transform: translateY(3px); box-shadow: 0 4px 0 #8a4b00; }
+  </style>
+</head>
+<body>
+  <div id="flash"></div>
+  <div id="hud">
+    <div id="top">
+      <div id="scorewrap">
+        <span id="score">0</span>
+        <small id="bestline"></small>
+      </div>
+      <button id="mute" type="button" aria-label="Mute" aria-pressed="false">
+        <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 10v4h4l5 4V6L8 10H4z" fill="currentColor" stroke="none"/>
+          <path d="M16 9.5a3.5 3.5 0 0 1 0 5"/>
+          <path d="M18 7a7 7 0 0 1 0 10"/>
+        </svg>
+        <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M4 10v4h4l5 4V6L8 10H4z" fill="currentColor" stroke="none"/>
+          <path d="M16 10l5 5M21 10l-5 5"/>
+        </svg>
+      </button>
+    </div>
+    <div id="callout"></div>
+    <div id="floater"></div>
+  </div>
+  <button id="burrow" type="button" hidden><i id="burrow-fill"></i><b>BURROW</b></button>
+  <div id="title">
+    <div>
+      <h1 class="logo">HIPPITY<span>HOP</span></h1>
+      <p class="tag">Zig the rabbit. One touch. The whole block.</p>
+      <div class="title-best" id="title-best"></div>
+    </div>
+    <div>
+      <div class="cta">TAP TO RUN</div>
+      <div class="hints">
+        <div><b>TAP</b> hop the low stuff</div>
+        <div><b>SWIPE DOWN</b> burrow the tall stuff</div>
+      </div>
+      <div class="keys">Space or Up to hop · Down or S to burrow · M mutes</div>
+    </div>
+  </div>
+  <div id="over" hidden>
+    <div></div>
+    <div class="card">
+      <p class="wrap-title">THAT'S A WRAP</p>
+      <div id="final-score">0</div>
+      <div class="final-best" id="final-best">BEST 0</div>
+      <div class="final-cleared" id="final-cleared">0 BLOCKS CLEARED</div>
+      <p id="new-best" hidden>NEW BEST</p>
+      <button id="retry" type="button">RUN IT BACK</button>
+    </div>
+  </div>
+  <script src="./assets/game.js"></script>
+</body>
+</html>
