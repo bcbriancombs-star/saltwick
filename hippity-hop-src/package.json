@@ -1,0 +1,18 @@
+{
+  "name": "hippity-hop",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Source for Hippity Hop, a one-touch night-city runner.",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --dev"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.9"
+  }
+}
